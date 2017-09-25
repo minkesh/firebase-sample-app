@@ -3,11 +3,16 @@ const {firebaseConfig} = require('./config');
 const firebase = require('firebase-admin');
 const {getCategoryInstacne} = require('./factory/item_category');
 
-firebase.initializeApp(firebaseConfig);
+let serviceAccount = require('./booking-engine-backend-firebase-adminsdk-a3qhi-329ba68ff0.json');
+
+firebase.initializeApp({
+    credential: firebase.credential.cert(serviceAccount),
+    databaseURL: `https://booking-engine-backend.firebaseio.com`
+});
 const database = firebase.database();
 
 exports.category = functions.https.onRequest((req, res) => {
-    const {businessId} = req.query
+    const {businessId, categoryId} = req.query
     if (!businessId) {
         console.error('Business id absent');
         return res.status(400).send({
@@ -15,15 +20,41 @@ exports.category = functions.https.onRequest((req, res) => {
             message: 'INVALID REQUEST'
         });
     }
+    const {method, body} = req;
     const itemCategory = getCategoryInstacne({businessId, db: database});
-    console.log('Category instance created', itemCategory)
-    const {method} = req;
     switch(method) {
         case 'GET':
-            res.status(200).json({
-                success: true,
-                message: 'CATEGORY INSERTED SUCCESSFULLY'
-            });
+            let fetchPromise
+            if (categoryId) {
+                fetchPromise = itemCategory.fetch(categoryId)
+            } else {
+                fetchPromise = itemCategory.fetchMultiple()
+            }
+            fetchPromise
+            .then((cat) => {
+                res.status(200).json({
+                    success: true,
+                    result: cat
+                });
+            })
+            break;
+        case 'PUT':
+            itemCategory.insert(body)
+            .then((key) => {
+                res.status(200).json({
+                    success: true,
+                    result: key
+                });
+            })
+            break;
+        case 'DELETE':
+            itemCategory.remove(categoryId)
+            .then(() => {
+                res.status(200).json({
+                    success: true,
+                    message: 'CATEGORY REMOVED SUCCESSFULLY'
+                });
+            })
             break;
         default:
             res.status(400).json({
