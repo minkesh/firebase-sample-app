@@ -2,8 +2,10 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "dependencies": {
+    "elasticsearchclient": "^0.5.3",
     "firebase-admin": "^5.2.1",
-    "firebase-functions": "^0.6.3"
+    "firebase-functions": "^0.6.3",
+    "lodash": "^4.17.4"
   },
   "private": true
 }

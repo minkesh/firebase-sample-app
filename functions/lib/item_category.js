@@ -1,6 +1,7 @@
 const {ModelActionInterface} = require('./interface');
 const {Interface} = require('../helper');
 const CategorySchema = require('../schema/item_category');
+const _ = require('lodash');
 
 class ItemCategory {
     constructor(params) {
@@ -11,58 +12,86 @@ class ItemCategory {
         const {businessId, db} = params;
         this.businessId = businessId;
         this.db = db;
-        this.categoryRef = this.db.ref(`/${this.businessId}/category`)
+        this.categoryRefStr = `/businesses/${this.businessId}/category`;
     }
 
-    _childAdded(snapShot) {
-        console.log('ADDED A NEW CHILD', snapShot.val())
+    _childAdded(snap) {
+        console.log('ADDED A NEW CHILD', snap.val())
+    }
+
+    _childUpdated(snap) {
+        console.log('Child Updated', sanp.val())
     }
 
     _childRemoved(snapShot) {
+        //Remove all the items of the category from the business
         console.log('Removed child', snapShot.val())
-    }
-
-    _checkMendatoryFields() {
-
     }
 
     insert(insertObj) {
         //check if mendatory fields are present with correct data type
         //and insert the item in db
-        const newCatRef = this.categoryRef.push()
-        this.categoryRef.once('child_added', this._childAdded)
+        if (Array.isArray(insertObj)) {
+            const insertKeys = [];
+            const updates = {};
+            const {categoryRefStr, db} = this;
+            const catRef = this.db.ref(this.categoryRefStr);
+            _.forEach(insertObj, (obj) => {
+                const newKey = catRef.push().key
+                updates[newKey] = obj
+                insertKeys.push(newKey)
+            })
+            return catRef.update(updates)
+                .then(() => insertKeys)
+                .catch(console.error)
+        }
+
+        const catRef = this.db.ref(this.categoryRefStr)
+        const newCatRef = catRef.push()
+        catRef.on('child_added', this._childAdded)
         return newCatRef.set(insertObj)
             .then((res) => newCatRef.key)
             .catch(console.error)
     }
 
-    update(id, updateObj) {
-
+    update(updateObj) {
     }
 
-    remove(id) {
+    remove(deleteObj) {
         //REMOVE ALL THE ITEMS OF THE CATEGORY
-        return this.categoryRef.child(id).remove()
+        const catRef = this.db.ref(this.categoryRefStr)
+        return catRef.child(deleteObj).remove()
+            .then((res) => deleteObj)
+            .catch(console.error)
     }
 
     fetch(id) {
-        const catItemRef = this.categoryRef.child(id)
-      return catItemRef.once('value')
-        .then((snapShot) => {
-            return snapShot.val()
-        })
-        .catch((err) => {
-            console.log('Error fetching category', err)
-        })
+        if (id) {
+            return this._fetchSingleCategory(id)
+        }
+        return this._fetchMultipleCategory()
     }
 
-    fetchMultiple() {
-      return this.categoryRef.once('value')
+    _fetchSingleCategory(id) {
+        const catItemRef = this.db.ref(this.categoryRefStr).child(id)
+        return catItemRef.once('value')
+         .then((snapShot) => {
+            return snapShot.val()
+         })
+         .catch((err) => {
+            console.log('Error fetching category', err)
+            return Promise.reject('Error fetching category')
+         })
+    }
+
+    _fetchMultipleCategory() {
+      return this.db.ref(this.categoryRefStr).once('value')
         .then((snapShot) => {
             return snapShot.val()
         })
         .catch((err) => {
             console.log('Error fetching category', err)
+            return Promise.reject('Error fetching category')
         })
     }
 }

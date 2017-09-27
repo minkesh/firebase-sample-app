@@ -1,18 +1,15 @@
 const functions = require('firebase-functions');
 const {firebaseConfig} = require('./config');
-const firebase = require('firebase-admin');
 const {getCategoryInstacne} = require('./factory/item_category');
+const CategoryRequestHandler = require('./lib/request_handler/item_category_handler');
 
-let serviceAccount = require('./booking-engine-backend-firebase-adminsdk-a3qhi-329ba68ff0.json');
-
-firebase.initializeApp({
-    credential: firebase.credential.cert(serviceAccount),
-    databaseURL: `https://booking-engine-backend.firebaseio.com`
-});
-const database = firebase.database();
+const Database = require('./database/database_service');
+const fbDBInstance = Database.getFBDatabaseInstance()
 
 exports.category = functions.https.onRequest((req, res) => {
-    const {businessId, categoryId} = req.query
+    const {method, body, query} = req
+    const {businessId} = query
+    //---------Generic Validation------------//
     if (!businessId) {
         console.error('Business id absent');
         return res.status(400).send({
@@ -20,46 +17,17 @@ exports.category = functions.https.onRequest((req, res) => {
             message: 'INVALID REQUEST'
         });
     }
-    const {method, body} = req;
-    const itemCategory = getCategoryInstacne({businessId, db: database});
-    switch(method) {
-        case 'GET':
-            let fetchPromise
-            if (categoryId) {
-                fetchPromise = itemCategory.fetch(categoryId)
-            } else {
-                fetchPromise = itemCategory.fetchMultiple()
-            }
-            fetchPromise
-            .then((cat) => {
-                res.status(200).json({
-                    success: true,
-                    result: cat
-                });
-            })
-            break;
-        case 'PUT':
-            itemCategory.insert(body)
-            .then((key) => {
-                res.status(200).json({
-                    success: true,
-                    result: key
-                });
-            })
-            break;
-        case 'DELETE':
-            itemCategory.remove(categoryId)
-            .then(() => {
-                res.status(200).json({
-                    success: true,
-                    message: 'CATEGORY REMOVED SUCCESSFULLY'
-                });
-            })
-            break;
-        default:
-            res.status(400).json({
-                success: false,
-                message: 'METHOD NOT SUPPORTED'
-            });
-    }    
-})
+    const reqHandler = new CategoryRequestHandler({method, body,
+        query, catInstance: getCategoryInstacne({businessId, db: fbDBInstance})})
+
+    if (reqHandler.validate()) {
+        reqHandler.action()
+        .then((resultObj) => res.status(200).json(
+            Object.assign({success: true}, resultObj)))
+        .catch((err) => {
+            res.status(500).json({success: false, message: 'Internal Server Error'})
+        })
+    } else {
+        res.status(400).json({success: false, message: 'INVALID REQUEST'})
+    }
+});
