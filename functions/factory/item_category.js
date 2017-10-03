@@ -1,7 +1,7 @@
-const ItemCategory = require('../lib/item_category')
+const ItemCategory = require('../lib/model/item_category')
 
-function getCategoryInstacne(params) {
+function getCategoryInstance(params) {
     return new ItemCategory(params)
 }
 
-module.exports = {getCategoryInstacne}
+module.exports = {getCategoryInstance}

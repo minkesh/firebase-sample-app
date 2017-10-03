@@ -1,11 +1,12 @@
 const {Interface} = require('../../helper');
 const {RequestHandlerInterface} = require('../interface');
+const _ = require('lodash');
 
-class CategoryRequestHandler {
+class ModelRequestHandler {
     constructor(params) {
         Interface.ensureImplements(this, RequestHandlerInterface);
-        const {catInstance, method, query, body} = params;
-        this.instance = catInstance;
+        const {instance, method, query, body, modelName} = params;
+        this.instance = instance;
         this.method = method;
         this.query = query;
         this.body = body;
@@ -42,13 +43,14 @@ class CategoryRequestHandler {
         }  
     }
 
-    action() {
+    //todo: Handle multi request
+    performOperation() {
         const {method, instance, query, body} = this;
         let resPromise;
         switch(method) {
             case 'GET':
-                const {categoryId} = query;
-                resPromise = this.instance.fetch(categoryId)
+                const {id} = query;
+                resPromise = this.instance.fetch(id)
                     .then(cat => {return {result: cat}})
                 break;
             case 'PUT':
@@ -57,9 +59,13 @@ class CategoryRequestHandler {
                     .then(key => {return {result: key}})
                 break;
             case 'DELETE':
-                const {deleteObj} = body;
-                resPromise = instance.remove(deleteObj)
-                    .then(() => {return {message: 'CATEGORY REMOVED SUCCESSFULLY'}})
+                const {deleteId} = body;
+                let delId = deleteId;
+                if (Array.isArray(deleteId)) {
+                    delId = deleteId.join(',')
+                }
+                resPromise = instance.remove(deleteId)
+                    .then(() => {return {message: `${delId} REMOVED SUCCESSFULLY`}})
                 break;
             case 'POST':
                 const {updateObj} = body;
@@ -75,4 +81,4 @@ class CategoryRequestHandler {
     }
 }
 
-module.exports = CategoryRequestHandler;
+module.exports = ModelRequestHandler;
