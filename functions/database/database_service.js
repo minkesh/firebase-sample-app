@@ -1,13 +1,15 @@
 const firebase = require('firebase-admin');
 const serviceAccount = require('../service-account.json');
+const Config = require('../config');
 
+//Singleton class for firebase database service
 const DatabaseService = function() {
     let _fbDBInstance;
     function _connectFB() {
         console.log('CONNECT')
         firebase.initializeApp({
             credential: firebase.credential.cert(serviceAccount),
-            databaseURL: `https://booking-engine-backend.firebaseio.com`
+            databaseURL: Config.firebaseAppConfig.databaseURL
         });
         return firebase.database();
     }

@@ -1,5 +1,9 @@
 const Model = require('./model')
-const CategorySchema = require('../../schema/item_category');
+const CategorySchema = require('../../schema/Product');
+
+/*
+    MenuItem modal
+*/
 
 class MenuItem extends Model {
     constructor(params) {

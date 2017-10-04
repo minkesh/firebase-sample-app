@@ -1,8 +1,10 @@
-//Abstract class for the CRUD operations
+//Abstract class for the CRUD operations for the modals
 class Model {
     constructor(params) {
         const {businessId, db, modelName} = params;
         this.ref = db.ref(`businesses/${businessId}/${modelName}`);
+        this.db = db;
+        this.businessId = this.businessId;
     }
 
     insert(insertObj) {

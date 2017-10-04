@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const Model = require('./model');
 
-class Business extends Model{
+class Business extends Model {
     constructor(params) {
         params.modelName = 'business';
         super(params);

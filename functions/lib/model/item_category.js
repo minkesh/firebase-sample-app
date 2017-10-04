@@ -2,6 +2,10 @@ const _ = require('lodash');
 const CategorySchema = require('../../schema/item_category');
 const Model = require('./model');
 
+/*
+    Category Model
+*/
+
 class ItemCategory extends Model {
     constructor(params) {
         params.modelName = 'category';
@@ -16,8 +20,7 @@ class ItemCategory extends Model {
         console.log('Child Updated', sanp.val())
     }
 
-    _childRemoved(snapShot) {
-        //Remove all the items of the category from the business
+    _childRemoved(id) {
         console.log('Removed child', snapShot.val())
     }
 
@@ -47,6 +50,7 @@ class ItemCategory extends Model {
     }
 
     remove(id) {
+        this.ref.on('child_removed', () => this._childRemoved(id))
         return super.remove(id);
     }
 
